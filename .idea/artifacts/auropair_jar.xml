@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="auropair:jar">
+    <output-path>$PROJECT_DIR$/release</output-path>
+    <root id="archive" name="autopair.jar">
+      <element id="module-output" name="test" />
+    </root>
+  </artifact>
+</component>
