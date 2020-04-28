@@ -1,36 +1,32 @@
 package com.yaralex.bloetooth.headphones.autopair;
 
+import com.google.common.base.Strings;
+
 import java.io.*;
 
 public class BluetoothHandler extends Thread {
 
-    private Process process;
+    private Process btProcess;
+    private Process pacmdProcess;
     private boolean servicesResolved = false;
     private String mac = "";
     private boolean starting = true;
 
-    public BluetoothHandler(Process process, String mac) {
-        this.process = process;
+    public BluetoothHandler(String mac) {
+        this.btProcess = runBluetoothProcess();
         this.mac = mac;
     }
 
     @Override
     public void run() {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(btProcess.getInputStream()));
 
         while (starting) {
             try {
                 String line = bufferedReader.readLine();
-                if (line != null) {
-                    parseResponse(line);
-                } else {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            } catch (IOException e) {
+                parseResponse(line);
+                Thread.sleep(100);
+            } catch (IOException | InterruptedException e) {
                 System.err.println(e.getMessage());
             }
         }
@@ -38,28 +34,37 @@ public class BluetoothHandler extends Thread {
     }
 
     private void parseResponse(String response) {
-        if (response == null || response.isEmpty()) {
+        if (Strings.isNullOrEmpty(response)) {
             return;
         }
+
         if (response.contains("ServicesResolved")) {
             servicesResolved = true;
-        } else if (response.contains("Connected")) {
-            if (response.substring(response.lastIndexOf(" ")+1).equals("no")) {
-                System.out.println("Connected no");
-                connect();
-            } else {
-                servicesResolved = false;
-                System.out.println("Connected yes");
-            }
+        } else if (response.contains("Connected: yes")){
+            servicesResolved = false;
+        } else if (response.contains("Connected: no") && !servicesResolved) {
+            connectBt();
         }
     }
 
-    private void connect() {
-        if (!servicesResolved) {
-            System.out.println("Connect headphones");
-            PrintStream printStream = new PrintStream(process.getOutputStream(), true);
-            printStream.println("connect " + mac);
+    private void connectBt() {
+        System.out.println("Connecting to headphones...");
+        PrintStream printStream = new PrintStream(btProcess.getOutputStream(), true);
+        printStream.println("connect " + mac);
+    }
+
+    private Process runBluetoothProcess() {
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        processBuilder.command("bluetoothctl");
+        processBuilder.redirectErrorStream(true);
+        Process process = null;
+        try {
+            process = processBuilder.start();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+        return process;
     }
 
     public void setMac (String mac) {

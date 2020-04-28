@@ -3,6 +3,7 @@
     <output-path>$PROJECT_DIR$/release</output-path>
     <root id="archive" name="autopair.jar">
       <element id="module-output" name="test" />
+      <element id="library" level="project" name="com.google.guava:guava:18.0" />
     </root>
   </artifact>
 </component>
